@@ -34,6 +34,16 @@ ALLOWED_HOSTS = config(
     default="localhost,127.0.0.1",
     cast=Csv(),
 )
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="",
+    cast=Csv(),
+)
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=Csv(),
+)
 
 
 INSTALLED_APPS = [
@@ -51,6 +61,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -124,6 +135,16 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
@@ -152,7 +173,7 @@ SIMPLE_JWT = {
 }
 
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG and not CORS_ALLOWED_ORIGINS
 
 
 SWAGGER_SETTINGS = {
@@ -216,9 +237,8 @@ if DEBUG:
 # - Path is used to build file paths that work on Windows, macOS, and Linux.
 # - dj_database_url converts a DATABASE_URL string into Django's database
 #   dictionary format.
-# - Config, Csv, and RepositoryEnv come from python-decouple. They read
-#   values from the .env file and convert those values into useful Python
-#   types.
+# - Csv and config come from python-decouple. They read values from the .env
+#   file and convert those values into useful Python types.
 #
 # BASE_DIR stores the root folder of the project. It is used to build paths
 # for the database, templates, static files, and media files.
@@ -236,6 +256,12 @@ if DEBUG:
 # ALLOWED_HOSTS is loaded from .env as a comma-separated list. Django uses
 # it to decide which domains are allowed to serve this project.
 #
+# CORS_ALLOWED_ORIGINS is loaded from .env as a comma-separated list. It
+# controls which frontend domains can call the API in production.
+#
+# CSRF_TRUSTED_ORIGINS is loaded from .env as a comma-separated list. It
+# tells Django which HTTPS origins are trusted for CSRF-protected requests.
+#
 # INSTALLED_APPS includes Django's built-in apps and the apps needed for
 # this API:
 # - rest_framework provides Django REST Framework.
@@ -244,7 +270,9 @@ if DEBUG:
 # - shortener is the app that will contain the URL shortener code.
 #
 # MIDDLEWARE defines code that runs during every request and response.
-# CorsMiddleware is placed near the top so CORS headers can be added early.
+# WhiteNoiseMiddleware is placed after SecurityMiddleware so static files
+# can be served efficiently in production. CorsMiddleware is placed near
+# the top so CORS headers can be added early.
 #
 # ROOT_URLCONF tells Django that the main URL routes are in config.urls.
 #
@@ -264,8 +292,10 @@ if DEBUG:
 # LANGUAGE_CODE, TIME_ZONE, USE_I18N, and USE_TZ control localization and
 # timezone behavior. UTC is a good default for APIs.
 #
-# STATIC_URL, STATIC_ROOT, and STATICFILES_DIRS configure static files like
-# CSS, JavaScript, and images.
+# STATIC_URL, STATIC_ROOT, STATICFILES_STORAGE, STORAGES, and
+# STATICFILES_DIRS configure static files like CSS, JavaScript, and images.
+# WhiteNoise uses compressed manifest storage so production static files are
+# cached well and served with versioned filenames.
 #
 # MEDIA_URL and MEDIA_ROOT configure uploaded files. The URL shortener may
 # not need uploads immediately, but this is a standard project setup.
@@ -280,9 +310,9 @@ if DEBUG:
 # last 7 days. Access tokens are shorter-lived for safety. Refresh tokens
 # last longer so users do not need to log in too often.
 #
-# CORS_ALLOW_ALL_ORIGINS=True is useful during development because any local
-# frontend can call the API. In production, replace it with a specific list
-# of allowed origins.
+# CORS_ALLOW_ALL_ORIGINS is only enabled when DEBUG=True and no specific
+# CORS_ALLOWED_ORIGINS are set. In production, DEBUG should be False and
+# CORS_ALLOWED_ORIGINS should contain the real frontend domains.
 #
 # SWAGGER_SETTINGS configures drf_yasg. Session authentication is disabled
 # because this API uses JWT. The Bearer security definition tells Swagger
@@ -300,7 +330,9 @@ if DEBUG:
 # - PostgreSQL can be used later by changing DATABASE_URL only.
 # - JWT is configured globally so protected API views can use it by default.
 # - Pagination is configured globally so list endpoints behave consistently.
-# - CORS is open only for development convenience.
+# - WhiteNoise is used so Render can serve collected static files.
+# - CORS is open only for development convenience and locked down by env
+#   variables in production.
 # - Console logging is enabled only in development.
 #
 # Before reviewing this code, read and understand:
@@ -309,6 +341,8 @@ if DEBUG:
 # - How DATABASE_URL works for SQLite and PostgreSQL.
 # - The difference between access tokens and refresh tokens in JWT.
 # - How CORS affects API requests from a frontend.
+# - How WhiteNoise serves static files on platforms like Render.
+# - Why CSRF_TRUSTED_ORIGINS must include deployed HTTPS origins.
 # - How Swagger/OpenAPI documentation describes an API.
 # - The difference between static files and media files in Django.
 #
