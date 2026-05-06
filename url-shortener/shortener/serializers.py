@@ -104,7 +104,7 @@ class ShortURLSerializer(serializers.ModelSerializer):
     def get_short_url(self, obj):
         request = self.context.get("request")
         code_or_alias = obj.custom_alias or obj.short_code
-        path = f"/{code_or_alias}/"
+        path = f"/s/{code_or_alias}/"
 
         if request is None:
             return path
