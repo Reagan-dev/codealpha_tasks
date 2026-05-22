@@ -35,6 +35,11 @@ ALLOWED_HOSTS = config(
     default="localhost,127.0.0.1",
     cast=Csv(),
 )
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=Csv(),
+)
 
 
 # Application definition
@@ -55,6 +60,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -142,6 +148,17 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
@@ -170,20 +187,30 @@ SIMPLE_JWT = {
 
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = config(
+    "CORS_ALLOW_ALL_ORIGINS",
+    default=DEBUG,
+    cast=cast_bool,
+)
 
 
 # Email
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=cast_bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 
 if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = config(
+        "EMAIL_BACKEND",
+        default="django.core.mail.backends.console.EmailBackend",
+    )
 else:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_BACKEND = config(
+        "EMAIL_BACKEND",
+        default="django.core.mail.backends.smtp.EmailBackend",
+    )
 
 
 # Swagger / drf-yasg
@@ -223,9 +250,10 @@ REDOC_SETTINGS = {
 # like "localhost,127.0.0.1" into a Python list.
 # dj_database_url.config turns DATABASE_URL into Django's DATABASES format.
 #
-# SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL, EMAIL_HOST_USER, and
-# EMAIL_HOST_PASSWORD are read from environment variables so secret or
-# environment-specific values are not hard-coded into the project.
+# SECRET_KEY, DEBUG, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, DATABASE_URL,
+# CORS_ALLOW_ALL_ORIGINS, and email settings are read from environment
+# variables so secret or environment-specific values are not hard-coded into
+# the project.
 #
 # INSTALLED_APPS registers Django's built-in apps, Django REST Framework,
 # corsheaders, drf_yasg, and the local accounts and events apps so Django can
@@ -233,6 +261,7 @@ REDOC_SETTINGS = {
 #
 # MIDDLEWARE lists request/response processing layers. CorsMiddleware is near
 # the top so CORS headers are added before Django returns a response.
+# WhiteNoiseMiddleware lets the app serve collected static files on Render.
 #
 # REST_FRAMEWORK sets JWT authentication as the default, requires authenticated
 # users by default, enables page-number pagination, returns 20 items per page,
@@ -244,8 +273,10 @@ REDOC_SETTINGS = {
 # DATABASES uses SQLite when DATABASE_URL is missing and PostgreSQL or another
 # supported database when DATABASE_URL is provided.
 #
-# EMAIL_BACKEND uses the console backend while DEBUG is True so development
-# emails print in the terminal. When DEBUG is False, it uses Gmail SMTP.
+# EMAIL_BACKEND defaults to the console backend while DEBUG is True so
+# development emails print in the terminal. When DEBUG is False, it defaults to
+# SMTP and uses EMAIL_HOST, EMAIL_PORT, EMAIL_USE_TLS, EMAIL_HOST_USER, and
+# EMAIL_HOST_PASSWORD from the environment.
 #
 # SWAGGER_SETTINGS tells drf_yasg that protected endpoints use a Bearer token
 # in the Authorization header and disables session login in the API docs.
@@ -253,8 +284,10 @@ REDOC_SETTINGS = {
 # AUTH_USER_MODEL points Django to accounts.User, which is important because a
 # custom user model must be configured before the first migrations are created.
 #
-# STATIC_URL, STATIC_ROOT, STATICFILES_DIRS, MEDIA_URL, and MEDIA_ROOT configure
-# static files such as CSS or JavaScript and uploaded media files.
+# STATIC_URL, STATIC_ROOT, STATICFILES_DIRS, STORAGES, MEDIA_URL, and
+# MEDIA_ROOT configure static files such as CSS or JavaScript and uploaded
+# media files. STORAGES uses WhiteNoise's compressed manifest storage for
+# production static files.
 #
 # Important decisions that were made and why
 #
@@ -262,9 +295,11 @@ REDOC_SETTINGS = {
 # should set DEBUG=False, DEBUG=release, or DEBUG=production in .env or in the
 # hosting environment.
 #
-# CORS_ALLOW_ALL_ORIGINS is True because the requirement says to allow all
-# origins during development. In production, this should be replaced with a
-# strict CORS_ALLOWED_ORIGINS list.
+# CORS_ALLOW_ALL_ORIGINS defaults to DEBUG. This keeps development open while
+# allowing production to set CORS_ALLOW_ALL_ORIGINS=False.
+#
+# CSRF_TRUSTED_ORIGINS is loaded from .env so Render domains such as
+# https://your-service-name.onrender.com can be trusted in production.
 #
 # DEFAULT_PERMISSION_CLASSES uses IsAuthenticated so endpoints are protected by
 # default. Public endpoints, such as registration or login, can override this in
@@ -280,7 +315,7 @@ REDOC_SETTINGS = {
 # What you should read and understand before you review the code
 #
 # Read Django settings basics, especially INSTALLED_APPS, MIDDLEWARE,
-# DATABASES, AUTH_USER_MODEL, STATIC_URL, and MEDIA_URL.
+# DATABASES, AUTH_USER_MODEL, STATIC_URL, STATIC_ROOT, STORAGES, and MEDIA_URL.
 #
 # Read Django REST Framework authentication, permissions, pagination, and
 # exception handling.
@@ -289,6 +324,8 @@ REDOC_SETTINGS = {
 #
 # Read python-decouple and dj-database-url basics so you understand how values
 # move from .env into Django.
+#
+# Read Render deployment basics, Gunicorn, collectstatic, and WhiteNoise.
 #
 # Read drf_yasg's SECURITY_DEFINITIONS setting so Swagger can send JWT tokens
 # when testing protected endpoints.
