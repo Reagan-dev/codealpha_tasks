@@ -12,9 +12,24 @@ from decouple import Csv, config
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def cast_bool(value):
+    """Return a boolean for common environment flag values."""
+    true_values = {"1", "true", "yes", "on", "debug"}
+    false_values = {"0", "false", "no", "off", "release", "production"}
+    normalized_value = str(value).strip().lower()
+
+    if normalized_value in true_values:
+        return True
+
+    if normalized_value in false_values:
+        return False
+
+    raise ValueError(f"Invalid boolean value: {value}")
+
+
 # Core settings
 SECRET_KEY = config("SECRET_KEY")
-DEBUG = config("DEBUG", default=True, cast=bool)
+DEBUG = config("DEBUG", default=True, cast=cast_bool)
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
@@ -197,14 +212,15 @@ REDOC_SETTINGS = {
 #
 # What each class or function does and why it was written that way
 #
-# There are no custom classes or custom functions in this settings file.
-# A Django settings file is mostly made of variables that Django and installed
-# packages read when the server starts.
+# There are no custom classes in this settings file. The cast_bool function
+# converts common environment words into True or False so DEBUG can be read
+# safely even if the computer has a system-level DEBUG value.
 #
 # Path from pathlib builds file paths safely on Windows, macOS, and Linux.
 # timedelta is used because Simple JWT expects token lifetimes as time objects.
-# config and Csv come from python-decouple. config reads values from .env, and
-# Csv turns comma-separated text like "localhost,127.0.0.1" into a Python list.
+# config and Csv come from python-decouple. config reads values from .env,
+# cast_bool converts DEBUG into a Boolean, and Csv turns comma-separated text
+# like "localhost,127.0.0.1" into a Python list.
 # dj_database_url.config turns DATABASE_URL into Django's DATABASES format.
 #
 # SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL, EMAIL_HOST_USER, and
@@ -242,8 +258,9 @@ REDOC_SETTINGS = {
 #
 # Important decisions that were made and why
 #
-# DEBUG defaults to True because this is a development project, but production
-# should set DEBUG=False in .env.
+# DEBUG defaults to True because this is a development project. Production
+# should set DEBUG=False, DEBUG=release, or DEBUG=production in .env or in the
+# hosting environment.
 #
 # CORS_ALLOW_ALL_ORIGINS is True because the requirement says to allow all
 # origins during development. In production, this should be replaced with a
