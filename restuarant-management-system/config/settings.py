@@ -2,6 +2,7 @@
 Django settings for the task3_restaurant_mgmt API project.
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -29,12 +30,20 @@ def cast_bool(value):
 
 # Core settings
 SECRET_KEY = config("SECRET_KEY")
-DEBUG = config("DEBUG", default=True, cast=cast_bool)
+DEBUG = config(
+    "DEBUG",
+    default="RENDER" not in os.environ,
+    cast=cast_bool,
+)
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
     cast=Csv(),
 )
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -50,7 +59,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "accounts",
     "menu",
-    "orders",
+    "orders.apps.OrdersConfig",
     "reservations",
     "inventory",
 ]
@@ -58,6 +67,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -146,6 +156,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
+
 
 # Django REST Framework
 REST_FRAMEWORK = {
@@ -176,6 +197,30 @@ CORS_ALLOW_ALL_ORIGINS = config(
     default=DEBUG,
     cast=cast_bool,
 )
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="",
+    cast=Csv(),
+)
+
+
+# Production security
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=Csv(),
+)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = config(
+    "SECURE_SSL_REDIRECT",
+    default=False,
+    cast=cast_bool,
+)
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = 0 if DEBUG else 60 * 60 * 24 * 30
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 
 # Swagger / drf-yasg
@@ -202,79 +247,89 @@ REDOC_SETTINGS = {
 #
 # What each class or function does and why it was written that way
 #
-# There are no custom classes in this settings file. The cast_bool function
-# converts common environment words into True or False so DEBUG and CORS flags
-# can be read safely from .env.
+# cast_bool converts common environment words into True or False. It is used
+# for DEBUG, CORS_ALLOW_ALL_ORIGINS, and SECURE_SSL_REDIRECT.
 #
-# Path from pathlib builds file paths safely on Windows, macOS, and Linux.
+# os is imported so settings can read Render-provided environment variables
+# such as RENDER_EXTERNAL_HOSTNAME.
+#
+# Path builds file paths safely across operating systems.
+#
 # timedelta is used because Simple JWT expects token lifetimes as time objects.
-# config and Csv come from python-decouple. config reads values from .env, and
-# Csv turns comma-separated text like "localhost,127.0.0.1" into a Python list.
+#
+# config and Csv come from python-decouple. config reads environment values,
+# and Csv turns comma-separated values into Python lists.
+#
 # dj_database_url.config turns DATABASE_URL into Django's DATABASES format.
 #
-# SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL, TIME_ZONE, and
-# CORS_ALLOW_ALL_ORIGINS are read from environment variables so deployment
-# values do not need to be hard-coded.
+# SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL, TIME_ZONE, CORS, CSRF, and
+# SSL settings are environment-driven so deployment values are not hard-coded.
 #
-# INSTALLED_APPS registers Django's built-in apps, Django REST Framework,
-# corsheaders, drf_yasg, and the local accounts, menu, orders, reservations,
-# and inventory apps.
+# DEBUG defaults to True locally, but defaults to False on Render because
+# Render sets the RENDER environment variable.
 #
-# MIDDLEWARE lists request and response processing layers. CorsMiddleware is
-# near the top so CORS headers can be added before Django returns a response.
+# RENDER_EXTERNAL_HOSTNAME is added to ALLOWED_HOSTS automatically so the
+# Render service URL can serve requests without manual duplication.
 #
-# REST_FRAMEWORK sets JWT authentication as the default, requires authenticated
-# users by default, enables page-number pagination, and returns 20 items per
-# page.
+# INSTALLED_APPS uses orders.apps.OrdersConfig instead of plain "orders" so
+# AppConfig.ready imports orders.signals when Django starts.
 #
-# SIMPLE_JWT sets access tokens to expire after 60 minutes and refresh tokens
-# after 7 days. The Authorization header must use the Bearer token format.
+# WhiteNoiseMiddleware is placed after SecurityMiddleware so static files can
+# be served efficiently in production.
 #
-# DATABASES uses SQLite when DATABASE_URL is missing and PostgreSQL or another
-# supported database when DATABASE_URL is provided.
+# STORAGES configures normal uploaded file storage and compressed manifest
+# static file storage for WhiteNoise.
 #
-# AUTH_USER_MODEL points Django to accounts.User, which is important because a
-# custom user model must be configured before the first migrations are created.
+# REST_FRAMEWORK sets JWT authentication, authenticated access by default, and
+# page-number pagination.
 #
-# STATIC_URL, STATIC_ROOT, MEDIA_URL, and MEDIA_ROOT configure static files and
-# uploaded media files.
+# SIMPLE_JWT sets access and refresh token lifetimes and uses the Bearer
+# authorization header format.
+#
+# CORS_ALLOWED_ORIGINS and CORS_ALLOW_ALL_ORIGINS control browser access from
+# frontend domains.
+#
+# CSRF_TRUSTED_ORIGINS allows trusted HTTPS origins to submit CSRF-protected
+# requests.
+#
+# SECURE_PROXY_SSL_HEADER tells Django to trust Render's forwarded HTTPS
+# header.
+#
+# Cookie and HSTS settings become strict when DEBUG is False.
 #
 # SWAGGER_SETTINGS tells drf_yasg that protected endpoints use a Bearer token
 # in the Authorization header.
 #
 # Important decisions that were made and why
 #
-# DEBUG defaults to True because this is a development project. Production
-# should set DEBUG=False, DEBUG=release, or DEBUG=production in .env.
+# SQLite remains the local default because it works without extra setup.
 #
-# CORS_ALLOW_ALL_ORIGINS defaults to DEBUG. This allows all origins during
-# development and lets production disable that behavior with an environment
-# variable.
+# DATABASE_URL enables PostgreSQL on Render without changing code.
 #
-# SQLite is the default database because it works locally without extra setup.
-# DATABASE_URL allows switching to PostgreSQL in production without changing
-# this file.
+# WhiteNoise is used because Render's Django guide recommends it for serving
+# static files from the app service.
 #
-# DEFAULT_PERMISSION_CLASSES uses IsAuthenticated so API endpoints are protected
-# by default. Public endpoints can override this in their views.
+# SECURE_SSL_REDIRECT is environment-controlled so tests and local production
+# checks can run without unwanted redirects, while Render can set it to True.
 #
-# The review section is written as comments so this file remains valid Python
-# until you delete the review.
+# Cookie and HSTS settings depend on DEBUG so local development stays
+# convenient and production becomes stricter.
+#
+# The signals app config is explicit because inventory deduction and restore
+# behavior depend on orders.signals being imported.
 #
 # What you should read and understand before you review the code
 #
 # Read Django settings basics, especially INSTALLED_APPS, MIDDLEWARE,
-# DATABASES, AUTH_USER_MODEL, STATIC_URL, and MEDIA_URL.
+# DATABASES, AUTH_USER_MODEL, STORAGES, STATIC_URL, and MEDIA_URL.
 #
-# Read Django REST Framework authentication, permissions, and pagination.
+# Read Django deployment security settings and the deployment checklist.
 #
-# Read Simple JWT's access token, refresh token, and Authorization header flow.
+# Read Render environment variables, build commands, and PostgreSQL setup.
 #
-# Read python-decouple and dj-database-url basics so you understand how values
-# move from .env into Django.
+# Read WhiteNoise setup for Django static files.
 #
-# Read drf_yasg's SECURITY_DEFINITIONS setting so Swagger can send JWT tokens
-# when testing protected endpoints.
+# Read Django AppConfig.ready so you understand how signals are registered.
 #
 # ============================================================
 # END OF REVIEW
