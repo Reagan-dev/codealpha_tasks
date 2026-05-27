@@ -1,0 +1,845 @@
+{
+  "info": {
+    "name": "Task 3 ? Restaurant Management System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": []
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "?? Authentication",
+      "description": "AllowAny. Use these seeded users to switch roles.",
+      "item": [
+        {
+          "name": "Get Token ? Manager Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/",
+            "description": "Full access to all endpoints.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@restaurant.com\",\n  \"password\": \"Manager@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "  pm.collectionVariables.set(\"refresh_token\", json.refresh);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Token ? Staff Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/",
+            "description": "Can manage orders and view inventory.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"staff1@restaurant.com\",\n  \"password\": \"Staff@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "  pm.collectionVariables.set(\"refresh_token\", json.refresh);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Token ? Customer Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/",
+            "description": "Can place orders and make reservations.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer1@email.com\",\n  \"password\": \"Customer@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "  pm.collectionVariables.set(\"refresh_token\", json.refresh);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/refresh/",
+            "description": "Uses the current refresh token and stores the new access token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Token refreshed\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "??? Menu",
+      "description": "Mixed auth. Public reads, staff/manager writes.",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/menu/categories/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List All Menu Items",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/menu/items/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Available Items",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/menu/items/?available=true",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Category",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/menu/items/?category=1",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Menu Item Detail",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/menu/items/{{menu_item_id}}/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create Menu Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/menu/items/",
+            "description": "IsStaff required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Grilled Chicken Bowl\",\n  \"description\": \"Rice bowl with grilled chicken, vegetables, and house sauce.\",\n  \"category\": 1,\n  \"price\": \"950.00\",\n  \"preparation_time\": 20,\n  \"is_available\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Menu Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/menu/items/{{menu_item_id}}/manage/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_available\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Menu Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/menu/items/{{menu_item_id}}/manage/",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "?? Tables & Reservations",
+      "description": "Mixed auth. Public table list, authenticated reservation actions.",
+      "item": [
+        {
+          "name": "List All Tables",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/tables/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/reservations/",
+            "description": "Use table ID from List All Tables. Datetime must be future.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"table\": 1,\n  \"reservation_datetime\": \"2026-07-01T18:30:00Z\",\n  \"party_size\": 2,\n  \"duration_minutes\": 90,\n  \"notes\": \"Window seat please\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Reservations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/reservations/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reservation Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/reservations/{{reservation_id}}/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/api/reservations/{{reservation_id}}/cancel/",
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "?? Orders",
+      "description": "Bearer auth required. Customers place orders; staff manage all orders.",
+      "item": [
+        {
+          "name": "Place Order ? Customer",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/orders/",
+            "description": "Triggers inventory deduction via Django signal.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"table\": 1,\n  \"order_type\": \"DINE_IN\",\n  \"items\": [\n    {\n      \"menu_item\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"menu_item\": 3,\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/orders/{{order_id}}/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List All Orders ? Staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/orders/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Orders by Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/orders/?status=RECEIVED",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order Status ? Advance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/orders/{{order_id}}/status/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PREPARING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order Status ? Cancel",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/orders/{{order_id}}/status/",
+            "description": "Triggers inventory restoration via Django signal.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{access_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "?? Inventory",
+      "description": "Bearer auth required. IsStaff or IsManager for list, IsManager for restock.",
+      "item": [
+        {
+          "name": "List All Inventory",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/inventory/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List Low Stock Items",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/inventory/?low_stock=true",
+            "description": "At least 1 item is pre-seeded below reorder level."
+          },
+          "response": []
+        },
+        {
+          "name": "Restock Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/inventory/{{inventory_item_id}}/restock/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity_to_add\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{access_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "?? Reports",
+      "description": "Bearer auth required. IsStaff can view sales reports.",
+      "item": [
+        {
+          "name": "Daily Sales Report ? Today",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/reports/daily-sales/",
+            "description": "Returns revenue, order count, top 5 items for today. Seed data includes 3 SERVED orders so this returns non-zero values."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily Sales Report ? Specific Date",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/reports/daily-sales/?date={{report_date}}",
+            "description": ""
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{access_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "menu_item_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "reservation_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "inventory_item_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "report_date",
+      "value": "2026-05-27",
+      "type": "string"
+    }
+  ]
+}

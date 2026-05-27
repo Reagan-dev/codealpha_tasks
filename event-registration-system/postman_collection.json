@@ -1,0 +1,567 @@
+{
+  "info": {
+    "name": "Task 2 ? Event Registration System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": []
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "?? Authentication",
+      "description": "AllowAny for registration and token requests. Bearer auth required for profile requests.",
+      "item": [
+        {
+          "name": "Register as Member",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/register/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newmember@example.com\",\n  \"username\": \"newmember\",\n  \"password\": \"TestPass123!\",\n  \"password2\": \"TestPass123!\",\n  \"role\": \"MEMBER\",\n  \"first_name\": \"New\",\n  \"last_name\": \"Member\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register as Organiser",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/register/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"neworganizer@example.com\",\n  \"username\": \"neworganizer\",\n  \"password\": \"TestPass123!\",\n  \"password2\": \"TestPass123!\",\n  \"role\": \"ORGANIZER\",\n  \"first_name\": \"New\",\n  \"last_name\": \"Organizer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Token ? Organiser Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/",
+            "description": "Logs in as Sarah Mwangi (4 events seeded).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"organizer1@example.com\",\n  \"password\": \"TestPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "  pm.collectionVariables.set(\"refresh_token\", json.refresh);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Token ? Member Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/",
+            "description": "Logs in as Alice (5 registrations seeded).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"TestPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "  pm.collectionVariables.set(\"refresh_token\", json.refresh);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/token/refresh/",
+            "description": "Uses the current refresh token and stores the new access token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Token refreshed\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", json.access);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/auth/profile/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/profile/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+254712345678\",\n  \"bio\": \"Django enthusiast.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "?? Categories",
+      "description": "AllowAny. Public category browsing.",
+      "item": [
+        {
+          "name": "List All Categories",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/categories/",
+            "description": ""
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "??? Events",
+      "description": "Mixed auth. Public list/detail, organizer-only create/update/delete.",
+      "item": [
+        {
+          "name": "List All Events",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/events/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List Upcoming Events",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/events/?upcoming=true",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Category",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/events/?category=1",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Search Events",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/events/?search=Django",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Detail",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/events/{{event_id}}/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/events/",
+            "description": "IsOrganizer only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Nairobi Cloud Builders Meetup\",\n  \"description\": \"A practical meetup for backend developers deploying Django APIs.\",\n  \"category\": 1,\n  \"location\": \"Nairobi Garage\",\n  \"start_datetime\": \"2026-07-15T09:00:00Z\",\n  \"end_datetime\": \"2026-07-15T13:00:00Z\",\n  \"capacity\": 40,\n  \"status\": \"PUBLISHED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/events/{{event_id}}/manage/",
+            "description": "Organizer owner only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/events/{{event_id}}/manage/",
+            "description": "Organizer owner only."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "?? Registrations",
+      "description": "Bearer auth required. IsAuthenticated for create/list and IsRegistrationOwner for cancel.",
+      "item": [
+        {
+          "name": "Register for Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/registrations/",
+            "description": "If event is full, status will be WAITLISTED automatically.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"{{event_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Registrations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/registrations/",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Registration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/api/registrations/{{registration_id}}/cancel/",
+            "description": "If a waitlisted user exists for this event, they will be automatically promoted to CONFIRMED."
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{access_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "event_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "registration_id",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}

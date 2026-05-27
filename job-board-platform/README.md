@@ -1,93 +1,253 @@
-# Job Board Platform API
+﻿# Job Board Platform API
 
-This is a Django REST API for a job board platform with employer accounts,
-candidate accounts, job listings, resumes, and applications.
+A Django REST Framework API for employers, candidates, job listings, resumes, applications, and hiring workflows.
 
-## Render Deployment
+Python 3.12 | Django 5 | DRF | JWT | File Uploads | SQLite/PostgreSQL | Render
 
-Use these settings when creating the Render web service:
+## Features
 
-- Build Command: `bash build.sh`
-- Start Command: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
-- Environment: Python 3
-- Database: Render PostgreSQL
+- Two user roles: EMPLOYER and CANDIDATE with scoped access
+- Employer profiles: company name, industry, size, location, logo
+- Candidate profiles: headline, comma-separated skills, experience years
+- Job listings with category, type, experience level, salary range, remote flag
+- Advanced job search: keyword, location, salary range, filters
+- View count tracking per listing (atomic via F() expressions)
+- Resume upload with file type (.pdf / .docx) and size (5MB) validation
+- Application workflow: APPLIED → REVIEWING → INTERVIEW → OFFER / REJECTED
+- Private employer notes on applications (never visible to candidates)
+- Email notifications: application confirmation, status updates, new application alert for employers
+- Employer dashboard with stats: jobs, applications, views, top listings
+- Swagger UI at /swagger/ and ReDoc at /redoc/
+- Note: On Render free tier, uploaded files do not persist between deploys. Use Cloudinary or AWS S3 for production file storage.
 
-Set the environment variables from `.env.example` in the Render dashboard.
-At minimum, production needs `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS`,
-`CSRF_TRUSTED_ORIGINS`, `DATABASE_URL`, `PYTHON_VERSION`, and email settings
-if application emails should be sent.
+## Tech Stack
 
-If `build.sh` is committed with executable permissions, `./build.sh` also
-works as the Render build command.
+| Layer | Technology |
+| --- | --- |
+| Framework | Django 5, Django REST Framework |
+| Auth | JWT with Simple JWT |
+| API Docs | drf-yasg Swagger UI and ReDoc |
+| Database | SQLite locally, PostgreSQL on Render |
+| Deployment | Render, Gunicorn, WhiteNoise |
+| File Storage | Local (dev) / Cloudinary or S3 (prod recommended) |
 
-## Media Files
+## Project Structure
 
-Uploaded resumes and images are media files. On Render's free tier, files
-written to the local filesystem do not persist between deploys. For production
-file storage, use Cloudinary, AWS S3, or another persistent object storage
-service.
+```bash
+accounts/
+├── models.py
+├── permissions.py
+├── serializers.py
+├── urls.py
+└── views.py
+jobs/
+├── management/
+│   └── commands/
+│       └── seed_demo_data.py
+├── models.py
+├── serializers.py
+├── urls.py
+├── utils.py
+└── views.py
+applications/
+├── models.py
+├── serializers.py
+├── tests.py
+├── urls.py
+├── utils.py
+└── views.py
+```
 
-## Useful Commands
+## Getting Started
+
+### Prerequisites
+
+Python 3.12+ and pip.
+
+### Installation
+
+1. Clone the repo and enter the project directory:
+
+```bash
+git clone https://github.com/<your-username>/CodeAlpha_JobBoard.git
+cd CodeAlpha_JobBoard
+```
+
+2. Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Copy `.env.example` to `.env` and fill in values.
+5. Run migrations:
 
 ```bash
 python manage.py migrate
-python manage.py createsuperuser
-python manage.py collectstatic --no-input
-python manage.py test
 ```
 
-# ============================================================
-# REVIEW — READ THIS THEN DELETE FROM THIS LINE TO THE END
-# ============================================================
+6. Seed demo data:
 
-What each class or function does and why it was written that way
+```bash
+python manage.py seed_demo_data
+```
 
-requirements.txt lists the runtime packages Render installs before starting
-the app.
+7. Start the server:
 
-Procfile defines the web process that starts Gunicorn with the Django WSGI
-application.
+```bash
+python manage.py runserver
+```
 
-build.sh installs dependencies, collects static files, and runs database
-migrations during the Render build.
+### Seed Data
 
-.env.example documents the environment variables needed for local and
-production configuration.
+#### Employers
 
-config/settings.py contains the production settings additions for Render,
-WhiteNoise, HTTPS, allowed hosts, CSRF, CORS, and database configuration.
+| Role | Email | Password | Company | Active Jobs |
+| --- | --- | --- | --- | --- |
+| EMPLOYER | techcorp@example.com | TestPass123! | TechCorp Kenya | 3 |
+| EMPLOYER | greenbiz@example.com | TestPass123! | GreenBiz Africa | 3 |
+| EMPLOYER | devhive@example.com | TestPass123! | DevHive Ltd | 3 |
 
-README.md explains how to deploy the app and warns that Render free tier media
-files do not persist between deploys.
+#### Candidates
 
-Important decisions that were made and why
+| Role | Email | Password | Headline | Applications |
+| --- | --- | --- | --- | --- |
+| CANDIDATE | alice@example.com | TestPass123! | Senior Django Developer | 3 |
+| CANDIDATE | bob@example.com | TestPass123! | Frontend Engineer | 3 |
+| CANDIDATE | carol@example.com | TestPass123! | Data Analyst | 3 |
 
-Gunicorn is used because Render needs a production WSGI server instead of
-Django's development server.
+### Seeded Application States
 
-WhiteNoise is used so Django can serve collected static files on Render without
-needing a separate static file server.
+| Candidate | Job | Status |
+| --- | --- | --- |
+| Alice | Senior Backend Engineer | OFFER |
+| Alice | DevOps Engineer | INTERVIEW |
+| Alice | Full Stack Developer | APPLIED |
+| Bob | React Frontend Developer | REVIEWING |
+| Bob | UI/UX Designer Intern | APPLIED |
+| Bob | Junior Python Developer | REJECTED |
+| Carol | Data Scientist | INTERVIEW |
+| Carol | Financial Analyst | APPLIED |
+| Carol | Marketing Specialist | REVIEWING |
 
-PostgreSQL is expected in production because SQLite files are not appropriate
-for deployed multi-user APIs.
+### Environment Variables
 
-Media uploads are documented separately because static files and user-uploaded
-media files are different. collectstatic does not preserve uploaded resumes.
+| Variable | Description | Example |
+| --- | --- | --- |
+| SECRET_KEY | Django signing key | django-insecure-change-me |
+| DEBUG | Enables development behavior | True |
+| DATABASE_URL | Database connection URL | sqlite:///db.sqlite3 |
+| ALLOWED_HOSTS | Comma-separated allowed hosts | localhost,127.0.0.1 |
+| EMAIL_HOST_USER | SMTP username | your-email@gmail.com |
+| EMAIL_HOST_PASSWORD | SMTP app password | app-password |
 
-PYTHON_VERSION is documented because Django 6 needs a modern Python runtime
-and Render allows the runtime to be pinned through an environment variable.
+## API Endpoints
 
-What you should read and understand before you review the code
+### Authentication & Profiles
 
-Read Render's Django deployment guide.
+| Method | Endpoint | Role | Description |
+| --- | --- | --- | --- |
+| POST | /api/auth/employer/register/ | AllowAny | Register employer |
+| POST | /api/auth/candidate/register/ | AllowAny | Register candidate |
+| POST | /api/auth/token/ | AllowAny | Obtain JWT tokens |
+| POST | /api/auth/token/refresh/ | AllowAny | Refresh JWT access token |
+| GET | /api/auth/profile/ | Authenticated | Retrieve current profile |
+| PATCH | /api/auth/profile/ | Authenticated | Update current profile |
 
-Read Django deployment settings for DEBUG, ALLOWED_HOSTS, CSRF, HTTPS, static
-files, and media files.
+### Jobs
 
-Read WhiteNoise static file serving for Django.
+| Method | Endpoint | Role | Description |
+| --- | --- | --- | --- |
+| GET | /api/jobs/categories/ | AllowAny | List job categories |
+| GET | /api/jobs/ | AllowAny | List and search jobs |
+| POST | /api/jobs/ | EMPLOYER | Create job listing |
+| GET | /api/jobs/<pk>/ | AllowAny | Retrieve job detail and increment views |
+| PATCH | /api/jobs/<pk>/manage/ | Job owner | Update job listing |
+| DELETE | /api/jobs/<pk>/manage/ | Job owner | Delete job listing |
+| GET | /api/employer/dashboard/ | EMPLOYER | Employer dashboard stats |
 
-Read Gunicorn WSGI deployment basics.
+### Resumes
 
-# ============================================================
-# END OF REVIEW
-# ============================================================
+| Method | Endpoint | Role | Description |
+| --- | --- | --- | --- |
+| GET | /api/applications/resumes/ | CANDIDATE | List own resumes |
+| POST | /api/applications/resumes/ | CANDIDATE | Upload resume |
+| DELETE | /api/applications/resumes/<pk>/ | CANDIDATE | Delete own resume |
+
+### Applications
+
+| Method | Endpoint | Role | Description |
+| --- | --- | --- | --- |
+| GET | /api/applications/ | CANDIDATE | List own applications |
+| POST | /api/applications/ | CANDIDATE | Apply for a job |
+| GET | /api/applications/employer/ | EMPLOYER | List applications for employer jobs |
+| GET | /api/applications/<pk>/ | Authenticated | Retrieve application detail |
+| PATCH | /api/applications/<pk>/status/ | EMPLOYER | Update application status |
+
+### Job Search Query Parameters
+
+| Parameter | Type | Example | Description |
+| --- | --- | --- | --- |
+| search | string | Django | Searches title, description, company |
+| category | integer | 1 | Filters by category ID |
+| job_type | string | FULL_TIME | Filters by job type |
+| experience_level | string | SENIOR | Filters by experience level |
+| is_remote | boolean | true | Filters remote jobs |
+| is_featured | boolean | true | Filters featured jobs |
+| salary_min | number | 100000 | Minimum salary filter |
+| salary_max | number | 200000 | Maximum salary filter |
+| location | string | Nairobi | Case-insensitive location search |
+
+### Key Business Logic
+
+- File validation: extension must be .pdf or .docx, max 5MB.
+- Application guard: candidate cannot apply twice to same job.
+- Job guard: cannot apply to CLOSED or expired jobs.
+- Status transitions: APPLIED→REVIEWING→INTERVIEW→OFFER or REJECTED.
+
+## Authentication
+
+This API uses JWT. Obtain a token pair via POST /api/auth/token/. Include the access token as a Bearer token in the Authorization header for protected endpoints.
+
+```bash
+Authorization: Bearer <access_token>
+```
+
+## File Uploads
+
+Resume uploads are limited to 5MB and must use `.pdf` or `.docx` extensions. Render free tier media files do not persist between deploys, so production deployments should use Cloudinary, AWS S3, or another persistent storage backend.
+
+## Email Notifications
+
+| Trigger | Recipient | Description |
+| --- | --- | --- |
+| Application submitted | Candidate | Confirms application was received |
+| Status changed | Candidate | Notifies candidate of workflow update |
+| New application received | Employer | Alerts employer to review candidate |
+
+## Running Tests
+
+```bash
+python manage.py test applications
+```
+
+## Deployment (Render.com)
+
+1. Push the repository to GitHub.
+2. Create a Render Web Service from the GitHub repo.
+3. Set the build command to `bash build.sh`.
+4. Set the start command from `Procfile`.
+5. Add a Render PostgreSQL database and copy its `DATABASE_URL`.
+6. Set all `.env` variables in Render's environment settings panel.
+7. ⚠️ Media files (resumes, logos) do not persist on Render's free tier between deploys. Configure Cloudinary or AWS S3 for production. See django-storages documentation.
+
+## Credits
+
+Built for CodeAlpha Backend Development Internship — May 2026
