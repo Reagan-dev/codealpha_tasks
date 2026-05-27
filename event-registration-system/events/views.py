@@ -58,6 +58,8 @@ class EventListView(ListAPIView):
 
         if event_status:
             queryset = queryset.filter(status=event_status)
+        else:
+            queryset = queryset.exclude(status=Event.Status.DRAFT)
 
         if search:
             queryset = queryset.filter(
@@ -221,8 +223,8 @@ class RegistrationCancelView(UpdateAPIView):
 # supports category, status, search, and upcoming query parameters.
 #
 # EventListView.get_queryset builds the filtered event query. It searches title
-# and description, filters future events when upcoming=true, and supports
-# category by ID or exact category name.
+# and description, excludes draft events by default, filters future events when
+# upcoming=true, and supports category by ID or exact category name.
 #
 # EventDetailView handles GET /api/events/<pk>/. It returns more information
 # about one event than the list endpoint.
