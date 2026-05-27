@@ -2,6 +2,8 @@
 Django settings for the task4_job_board API project.
 """
 
+import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -10,6 +12,7 @@ from decouple import Csv, config
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+IS_TESTING = "test" in sys.argv
 
 
 def cast_bool(value):
@@ -35,6 +38,10 @@ ALLOWED_HOSTS = config(
     default="localhost,127.0.0.1",
     cast=Csv(),
 )
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -56,6 +63,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -138,6 +146,16 @@ USE_TZ = True
 # Static and media files
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -180,6 +198,36 @@ CORS_ALLOWED_ORIGINS = config(
     default="",
     cast=Csv(),
 )
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=Csv(),
+)
+
+if RENDER_EXTERNAL_HOSTNAME:
+    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
+
+# Production security
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = config(
+    "SECURE_SSL_REDIRECT",
+    default=not DEBUG and not IS_TESTING,
+    cast=cast_bool,
+)
+SESSION_COOKIE_SECURE = not DEBUG and not IS_TESTING
+CSRF_COOKIE_SECURE = not DEBUG and not IS_TESTING
+SECURE_HSTS_SECONDS = config(
+    "SECURE_HSTS_SECONDS",
+    default=0 if DEBUG or IS_TESTING else 31536000,
+    cast=int,
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG and not IS_TESTING
+SECURE_HSTS_PRELOAD = not DEBUG and not IS_TESTING
+X_FRAME_OPTIONS = "DENY"
 
 
 # Email
@@ -223,37 +271,45 @@ REDOC_SETTINGS = {
 # What each class or function does and why it was written that way
 #
 # There are no custom classes in this settings file. The cast_bool function
-# converts common environment words into True or False so flags like DEBUG,
-# CORS_ALLOW_ALL_ORIGINS, and EMAIL_USE_TLS can be read safely from .env.
+# converts common environment words into True or False so settings can be read
+# safely from environment variables.
+#
+# os reads RENDER_EXTERNAL_HOSTNAME, which Render sets automatically for the
+# deployed service.
+#
+# sys is used to detect manage.py test so production HTTPS redirects do not
+# interfere with API tests.
 #
 # Path builds file paths safely on Windows, macOS, and Linux.
-#
-# timedelta is used because Simple JWT expects token lifetimes as time objects.
 #
 # config and Csv come from python-decouple. config reads environment values,
 # and Csv turns comma-separated values into Python lists.
 #
 # dj_database_url.config turns DATABASE_URL into Django's DATABASES format.
 #
-# SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL, TIME_ZONE, CORS settings, and
-# email settings are read from environment variables so deployment values do
-# not need to be hard-coded.
+# ALLOWED_HOSTS is loaded from the environment and also includes Render's
+# external hostname when Render provides it.
 #
-# INSTALLED_APPS registers Django's built-in apps, Django REST Framework,
-# corsheaders, drf_yasg, and the local accounts, jobs, and applications apps.
+# MIDDLEWARE includes WhiteNoise after SecurityMiddleware so collected static
+# files can be served in production.
 #
-# MIDDLEWARE includes CorsMiddleware near the top so CORS headers can be added
-# before Django returns responses.
+# STORAGES uses WhiteNoise's compressed manifest storage for static files and
+# Django's normal filesystem storage for uploaded media.
 #
-# DATABASES uses SQLite when DATABASE_URL is missing and can switch to
-# PostgreSQL or another supported database when DATABASE_URL is provided.
+# DATABASES uses SQLite locally and switches to PostgreSQL or another database
+# when DATABASE_URL is provided.
 #
-# AUTH_USER_MODEL points Django to accounts.User so the project can use a
-# custom user model for job seekers, employers, and admins.
+# CSRF_TRUSTED_ORIGINS is environment-driven and automatically includes the
+# Render service origin when RENDER_EXTERNAL_HOSTNAME is available.
 #
-# MEDIA_URL and MEDIA_ROOT configure uploaded files such as applicant resumes.
+# SECURE_PROXY_SSL_HEADER tells Django to trust Render's forwarded HTTPS
+# header.
 #
-# FILE_UPLOAD_MAX_MEMORY_SIZE limits in-memory uploads to 5 MB.
+# SECURE_SSL_REDIRECT, SESSION_COOKIE_SECURE, CSRF_COOKIE_SECURE, HSTS, and
+# X_FRAME_OPTIONS harden production browser security.
+#
+# IS_TESTING keeps those HTTPS redirects and secure-cookie defaults from
+# breaking local automated tests.
 #
 # REST_FRAMEWORK sets JWT authentication, authenticated access by default,
 # page-number pagination, and a page size of 20 records.
@@ -261,39 +317,46 @@ REDOC_SETTINGS = {
 # SIMPLE_JWT sets access tokens to expire after 60 minutes and refresh tokens
 # after 7 days.
 #
-# Email settings are environment-driven so password reset emails, application
-# notifications, or employer messages can use different providers per
-# environment.
+# Email settings are environment-driven so each deployment can use its own
+# SMTP provider.
 #
 # SWAGGER_SETTINGS tells drf_yasg that protected endpoints use a Bearer token
 # in the Authorization header.
 #
 # Important decisions that were made and why
 #
-# DEBUG defaults to True because this is a development internship project.
-# Production should set DEBUG=False in the environment.
+# DEBUG defaults to True for local development, but production should set
+# DEBUG=False.
 #
-# CORS_ALLOW_ALL_ORIGINS defaults to DEBUG. This allows all frontend origins
-# during local development and can be locked down in production.
+# CORS_ALLOW_ALL_ORIGINS defaults to DEBUG so local frontend development is
+# easy and production can be locked down to known origins.
 #
-# SQLite is the default database because it works locally without extra setup.
-# DATABASE_URL keeps production database configuration flexible.
+# SQLite is the fallback database because it works locally without setup.
+# Render production should use DATABASE_URL from a managed PostgreSQL service.
 #
-# DEFAULT_PERMISSION_CLASSES uses IsAuthenticated so endpoints are protected by
-# default. Public endpoints, such as job listings, can override this in views.
+# WhiteNoise is used for static files because Render runs the Django app
+# directly behind Gunicorn and does not automatically serve collected static
+# files for Django.
+#
+# Media files still use local filesystem storage by default because Cloudinary
+# or S3 credentials are project-specific and should be added intentionally.
 #
 # What you should read and understand before you review the code
 #
 # Read Django settings basics, especially INSTALLED_APPS, MIDDLEWARE,
-# DATABASES, AUTH_USER_MODEL, STATIC_URL, and MEDIA_URL.
+# DATABASES, AUTH_USER_MODEL, STATIC_URL, MEDIA_URL, and STORAGES.
+#
+# Read Django deployment security settings and the deployment checklist.
+#
+# Read WhiteNoise static file serving for Django.
+#
+# Read Render's Django deployment guide.
 #
 # Read Django REST Framework authentication, permissions, and pagination.
 #
 # Read Simple JWT access token, refresh token, and Bearer header flow.
 #
 # Read python-decouple and dj-database-url basics.
-#
-# Read Django email settings and file upload settings.
 #
 # ============================================================
 # END OF REVIEW
