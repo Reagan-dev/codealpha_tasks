@@ -32,12 +32,12 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=True, cast=cast_bool)
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1",
+    default="localhost,127.0.0.1,codealphatasks-production-4c1d.up.railway.app",
     cast=Csv(),
 )
 CSRF_TRUSTED_ORIGINS = config(
     "CSRF_TRUSTED_ORIGINS",
-    default="",
+    default="https://codealphatasks-production-4c1d.up.railway.app",
     cast=Csv(),
 )
 
