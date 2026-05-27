@@ -78,12 +78,26 @@ class TableListView(generics.ListAPIView):
     permission_classes = (AllowAny,)
 
 
-class ReservationCreateView(generics.CreateAPIView):
-    """Create a reservation for the authenticated user."""
+from rest_framework.generics import ListCreateAPIView
 
-    queryset = Reservation.objects.select_related("table", "customer")
-    serializer_class = ReservationCreateSerializer
-    permission_classes = (IsAuthenticated,)
+
+class ReservationListCreateView(ListCreateAPIView):
+    """
+    GET  /api/reservations/ — list own reservations.
+    POST /api/reservations/ — create a new reservation.
+    Both require IsAuthenticated.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ReservationCreateSerializer
+        return ReservationDetailSerializer
+
+    def get_queryset(self):
+        return Reservation.objects.filter(
+            customer=self.request.user
+        ).order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)

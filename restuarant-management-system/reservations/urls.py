@@ -2,48 +2,35 @@ from django.urls import path
 
 from .views import (
     ReservationCancelView,
-    ReservationCreateView,
     ReservationDetailView,
-    ReservationListView,
+    ReservationListCreateView,
     TableListView,
 )
 
-
-app_name = "reservations"
-
-
-def reservation_collection_view(request, *args, **kwargs):
-    """Route reservation collection requests to the correct view."""
-    if request.method == "POST":
-        return ReservationCreateView.as_view()(request, *args, **kwargs)
-
-    return ReservationListView.as_view()(request, *args, **kwargs)
-
+app_name = 'reservations'
 
 urlpatterns = [
     path(
-        "tables/",
+        'tables/',
         TableListView.as_view(),
-        name="table-list",
+        name='table-list',
     ),
     path(
-        "reservations/",
-        reservation_collection_view,
-        name="reservation-list-create",
+        'reservations/',
+        ReservationListCreateView.as_view(),
+        name='reservation-list-create',
     ),
     path(
-        "reservations/<int:pk>/",
+        'reservations/<int:pk>/',
         ReservationDetailView.as_view(),
-        name="reservation-detail",
+        name='reservation-detail',
     ),
     path(
-        "reservations/<int:pk>/cancel/",
+        'reservations/<int:pk>/cancel/',
         ReservationCancelView.as_view(),
-        name="reservation-cancel",
+        name='reservation-cancel',
     ),
 ]
-
-
 # ============================================================
 # REVIEW — READ THIS THEN DELETE FROM THIS LINE TO THE END
 # ============================================================

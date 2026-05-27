@@ -1,43 +1,30 @@
 from django.urls import path
 
 from .views import (
-    OrderCreateView,
     OrderDetailView,
-    OrderListView,
+    OrderListCreateView,
     OrderStatusUpdateView,
 )
 
-
-app_name = "orders"
-
-
-def order_collection_view(request, *args, **kwargs):
-    """Route order collection requests to the correct view."""
-    if request.method == "POST":
-        return OrderCreateView.as_view()(request, *args, **kwargs)
-
-    return OrderListView.as_view()(request, *args, **kwargs)
-
+app_name = 'orders'
 
 urlpatterns = [
     path(
-        "orders/",
-        order_collection_view,
-        name="order-list-create",
+        'orders/',
+        OrderListCreateView.as_view(),
+        name='order-list-create',
     ),
     path(
-        "orders/<int:pk>/",
+        'orders/<int:pk>/',
         OrderDetailView.as_view(),
-        name="order-detail",
+        name='order-detail',
     ),
     path(
-        "orders/<int:pk>/status/",
+        'orders/<int:pk>/status/',
         OrderStatusUpdateView.as_view(),
-        name="order-status-update",
+        name='order-status-update',
     ),
 ]
-
-
 # ============================================================
 # REVIEW — READ THIS THEN DELETE FROM THIS LINE TO THE END
 # ============================================================

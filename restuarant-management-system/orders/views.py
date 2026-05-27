@@ -72,6 +72,42 @@ class OrderListView(generics.ListAPIView):
             queryset = queryset.filter(status=order_status)
 
         return queryset
+    
+from rest_framework.generics import ListCreateAPIView
+
+
+class OrderListCreateView(ListCreateAPIView):
+    """
+    GET  /api/orders/ — list all orders, staff only, filter by ?status=
+    POST /api/orders/ — create an order, any authenticated user.
+    """
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [IsStaff()]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return OrderCreateSerializer
+        return OrderDetailSerializer
+
+    def get_queryset(self):
+        queryset = Order.objects.select_related(
+            'customer',
+            'table',
+        ).prefetch_related('items__menu_item')
+
+        order_status = self.request.query_params.get('status')
+
+        if order_status:
+            if order_status not in Order.Status.values:
+                raise ValidationError(
+                    {'status': 'Use a valid order status.'}
+                )
+            queryset = queryset.filter(status=order_status)
+
+        return queryset
 
 
 # ============================================================
