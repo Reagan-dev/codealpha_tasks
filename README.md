@@ -16,10 +16,10 @@ CodeAlpha Backend Development Internship (May 2026) is a hands-on program focuse
 
 | Task | Project | Description | Live API | Tech Highlights |
 |------|---------|-------------|----------|-----------------|
-| Task 1 | URL Shortener | Generate shareable short links with QR codes, click analytics, and expiration policies. | [Live API](https://codealphatasks-production-9019.up.railway.app) | QR code generation, click tracking, TTL expiry, URL validation |
-| Task 2 | Event Registration System | Manage event registrations with automated ticket assignment, waitlist handling, and email notifications. | [Live API](https://codealphatasks-production-4c1d.up.railway.app) | Waitlist management, automated ticket numbers, email notifications, capacity limits |
-| Task 3 | Restaurant Management System | Handle orders, inventory, and revenue tracking with real-time stock management and daily sales reporting. | [Live API](https://protective-reprieve-production-1460.up.railway.app) | Inventory signals, order pipeline tracking, daily sales reports, stock automation |
-| Task 4 | Job Board Platform | Post jobs, manage applications, upload resumes, and track candidate pipeline with employer dashboard. | [Live API](https://alluring-clarity-production-2529.up.railway.app) | Resume uploads, application status pipeline, employer filtering, candidate rankings |
+| Task 1 | URL Shortener | Generate shareable short links with QR codes, click analytics, and expiration policies. | [Live API](https://codealphatasks-production-9019.up.railway.app/swagger/) | QR code generation, click tracking, TTL expiry, URL validation |
+| Task 2 | Event Registration System | Manage event registrations with automated ticket assignment, waitlist handling, and email notifications. | [Live API](https://codealphatasks-production-4c1d.up.railway.app/swagger/) | Waitlist management, automated ticket numbers, email notifications, capacity limits |
+| Task 3 | Restaurant Management System | Handle orders, inventory, and revenue tracking with real-time stock management and daily sales reporting. | [Live API](https://protective-reprieve-production-1460.up.railway.app/swagger/) | Inventory signals, order pipeline tracking, daily sales reports, stock automation |
+| Task 4 | Job Board Platform | Post jobs, manage applications, upload resumes, and track candidate pipeline with employer dashboard. | [Live API](https://alluring-clarity-production-2529.up.railway.app/swagger/) | Resume uploads, application status pipeline, employer filtering, candidate rankings |
 
 > Each project has its own README with full setup instructions, endpoint documentation, and seed data guide. Click the project folder to read it.
 
